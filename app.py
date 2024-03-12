@@ -108,101 +108,120 @@ def home():
     names,rolls,times,l = extract_attendance()
     return render_template('home.html',names=names,rolls=rolls,times=times,l=l,totalreg=totalreg(),datetoday2=datetoday2, mess = MESSAGE)
 
-
-#### This function will run when we click on Take Attendance Button
-@app.route('/start',methods=['GET'])
-def start():
+def mark_attendance():
     ATTENDENCE_MARKED = False
     if 'face_recognition_model.pkl' not in os.listdir('static'):
         names, rolls, times, l = extract_attendance()
-        MESSAGE = 'This face is not registered with us , kindly register yourself first'
+        MESSAGE = 'This face is not registered with us, kindly register yourself first'
+        return names, rolls, times, l, MESSAGE
+
+    cap = cv2.VideoCapture(0)
+    ret = True
+    while True:
+        # ... (existing code for face capture, identification, and attendance marking from lines 159-196)
+        if ATTENDENCE_MARKED:
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+    names, rolls, times, l = extract_attendance()
+    MESSAGE = 'Attendance taken successfully'
+    return names, rolls, times, l, MESSAGE
+
+#### This function will run when we click on Take Attendance Button
+@app.route('/start', methods=['GET'])
+def start():
+    names, rolls, times, l, message = mark_attendance()
+    return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2, mess=message)
+
+def mark_attendance():
+    ATTENDENCE_MARKED = False
+    if 'face_recognition_model.pkl' not in os.listdir('static'):
+        names, rolls, times, l = extract_attendance()
+        MESSAGE = 'This face is not registered with us, kindly register yourself first'
         print("face not in database, need to register")
-        return render_template('home.html',names=names,rolls=rolls,times=times,l=l,totalreg=totalreg,datetoday2=datetoday2, mess = MESSAGE)
-        # return render_template('home.html',totalreg=totalreg(),datetoday2=datetoday2,mess='There is no trained model in the static folder. Please add a new face to continue.')
+        return names, rolls, times, l, MESSAGE
 
     cap = cv2.VideoCapture(0)
     ret = True
     while True:
         # Read a frame from the camera
         ret, frame = cap.read()
-        
+
         # Convert the frame to grayscale
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
+
         # Detect faces in the grayscale frame
         faces = face_detector.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
-        
+
         # Draw rectangles around the detected faces
         for (x, y, w, h) in faces:
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            face = cv2.resize(frame[y:y+h,x:x+w], (50, 50))
-            identified_person = identify_face(face.reshape(1,-1))[0]
+            face = cv2.resize(frame[y:y+h, x:x+w], (50, 50))
+            identified_person = identify_face(face.reshape(1, -1))[0]
             cv2.putText(frame, f'{identified_person}', (x + 6, y - 6), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 20), 2)
             if cv2.waitKey(1) == ord('a'):
                 add_attendance(identified_person)
                 current_time_ = datetime.now().strftime("%H:%M:%S")
-                print(f"attendence marked for {identified_person}, at {current_time_} ")
+                print(f"attendence marked for {identified_person}, at {current_time_}")
                 ATTENDENCE_MARKED = True
                 break
         if ATTENDENCE_MARKED:
-            # time.sleep(3)
             break
 
         # Display the resulting frame
         cv2.imshow('Attendance Check, press "q" to exit', frame)
-        cv2.putText(frame,'hello',(30,30),cv2.FONT_HERSHEY_COMPLEX,2,(255, 255, 255))
-        
-    # Wait for the user to press 'q' to quit
+        cv2.putText(frame, 'hello', (30, 30), cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255))
+
+        # Wait for the user to press 'q' to quit
         if cv2.waitKey(1) == ord('q'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
     names, rolls, times, l = extract_attendance()
-    MESSAGE = 'Attendence taken successfully'
-    print("attendence registered")
-    return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(),
-                           datetoday2=datetoday2, mess=MESSAGE)
+    MESSAGE = 'Attendance taken successfully'
+    print("attendance registered")
+    return names, rolls, times, l, MESSAGE
 
-@app.route('/add',methods=['GET','POST'])
+@app.route('/add', methods=['GET', 'POST'])
 def add():
+    if request.method == 'POST':
+        names, rolls, times, l, message = add_new_user()
+        return render_template('home.html', names=names, rolls=rolls, times=times, l=l, totalreg=totalreg(), datetoday2=datetoday2, mess=message)
+    return render_template('add.html')
+
+def add_new_user():
     newusername = request.form['newusername']
     newuserid = request.form['newuserid']
-    userimagefolder = 'static/faces/'+newusername+'_'+str(newuserid)
+    userimagefolder = 'static/faces/' + newusername + '_' + str(newuserid)
     if not os.path.isdir(userimagefolder):
         os.makedirs(userimagefolder)
     cap = cv2.VideoCapture(0)
-    i,j = 0,0
+    i, j = 0, 0
     while 1:
-        _,frame = cap.read()
+        _, frame = cap.read()
         faces = extract_faces(frame)
-        for (x,y,w,h) in faces:
-            cv2.rectangle(frame,(x, y), (x+w, y+h), (255, 0, 20), 2)
-            cv2.putText(frame,f'Images Captured: {i}/50',(30,30),cv2.FONT_HERSHEY_SIMPLEX,1,(255, 0, 20),2,cv2.LINE_AA)
-            if j%10==0:
-                name = newusername+'_'+str(i)+'.jpg'
-                cv2.imwrite(userimagefolder+'/'+name,frame[y:y+h,x:x+w])
-                i+=1
-            j+=1
-        if j==500:
+        for (x, y, w, h) in faces:
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 20), 2)
+            cv2.putText(frame, f'Images Captured: {i}/50', (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 20), 2, cv2.LINE_AA)
+            if j % 10 == 0:
+                name = newusername + '_' + str(i) + '.jpg'
+                cv2.imwrite(userimagefolder + '/' + name, frame[y:y+h, x:x+w])
+                i += 1
+            j += 1
+        if j == 500:
             break
-        cv2.imshow('Adding new User',frame)
-        if cv2.waitKey(1)==27:
+        cv2.imshow('Adding new User', frame)
+        if cv2.waitKey(1) == 27:
             break
     cap.release()
     cv2.destroyAllWindows()
     print('Training Model')
     train_model()
-    names,rolls,times,l = extract_attendance()
-    if totalreg() > 0 :
-        names, rolls, times, l = extract_attendance()
-        MESSAGE = 'User added Sucessfully'
-        print("message changed")
-        return render_template('home.html',names=names,rolls=rolls,times=times,l=l,totalreg=totalreg(),datetoday2=datetoday2, mess = MESSAGE)
-    else:
-        return redirect(url_for('home.html',names=names,rolls=rolls,times=times,l=l,totalreg=totalreg(),datetoday2=datetoday2))
-    # return render_template('home.html',names=names,rolls=rolls,times=times,l=l,totalreg=totalreg(),datetoday2=datetoday2)
-
+    names, rolls, times, l = extract_attendance()
+    MESSAGE = 'User added Successfully'
+    return names, rolls, times, l, MESSAGE
 #### Our main function which runs the Flask App
 app.run(debug=True,port=1000)
 if __name__ == '__main__':

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add New User</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f5;
+            color: #333;
+            text-align: center;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            margin: 40px auto;
+            border-radius: 10px;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2); 
+        }
+
+        .header {
+            text-align: center; /* Center logo and title */
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            width: 150px; /* Adjust size as needed */
+            margin-bottom: 15px;
+        }
+
+        h1 { 
+            font-size: 3em;
+            color: #228B22; 
+            font-family: 'Lobster', cursive; /* Example cool font */
+        }
+
+        label {
+            font-size: 1.2em;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"] {
+            font-size: 1.2em; 
+            padding: 10px;
+            border: 1px solid #ccc;
+            width: calc(100% - 22px); 
+        }
+
+        input[type="submit"] {
+            background-color: #007bff;
+            color: #fff;
+            font-size: 1.2em;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container"> 
+        <div class="header">
+            <img src="../static/images/companylogo.jpg" alt="Face X Logo" class="logo">
+            <h1>Face X: Add New User</h1> 
+        </div>
+
+        <form method="POST" action="{{ url_for('add') }}">
+            <label for="newusername">Username:</label>
+            <input type="text" id="newusername" name="newusername" required>
+            <br>
+            <label for="newuserid">User ID:</label>
+            <input type="text" id="newuserid" name="newuserid" required>
+            <br>
+            <input type="submit" value="Add User">
+        </form>
+    </div>
+</body>
+</html>
